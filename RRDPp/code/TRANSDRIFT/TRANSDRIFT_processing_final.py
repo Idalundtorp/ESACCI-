@@ -27,6 +27,11 @@ import Functions
 import EASEgrid_correct as EASEgrid
 from Warren import SnowDepth, SWE
 
+def robust_std(data):
+    median = np.nanmedian(data)
+    mad = np.nanmedian(np.abs(data - median))
+    return mad * 1.4826  # scaling factor for normal distribution
+
 # %% Main
 dtint = 30
 gridres = 25000
@@ -36,10 +41,15 @@ save_path_data = os.path.dirname(os.path.dirname(
 saveplot = os.path.dirname(os.path.dirname(
     os.getcwd())) + '/FINAL/TRANSDRIFT/fig/'
 ofile = os.path.dirname(os.path.dirname(os.getcwd(
-))) + '/FINAL/TRANSDRIFT/final/ESACCIplus-SEAICE-RRDP2+-SID-TRANSDRIFT.dat'
-directory = os.path.dirname(os.path.dirname(
-    os.getcwd())) + '/RawData/TRANSDRIFT/datasets'
+))) + '/FINAL/TRANSDRIFT/final/ESACCIplus-SEAICE-RRDP2+-SID-TRANSDRIFT.nc'
 
+# directory = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
+#     os.getcwd())))) + '/RRDPp/RawData/TRANSDRIFT/datasets'
+
+directory = '/dmidata/projects/cmems2/C3S/RRDPp/RawData/TRANSDRIFT/datasets'
+
+if not os.path.exists(save_path_data):os.makedirs(save_path_data)
+if not os.path.exists(saveplot):os.makedirs(saveplot)
 
 count = 0 # count for header
 for filename in os.listdir(directory):
@@ -81,6 +91,9 @@ for filename in os.listdir(directory):
             latitude = data['lat']  # degrees
             longitude = data['lon']  # degrees
             SID = data['SID']  # meters
+            
+            SID[SID<0] = np.nan
+            SID[SID>6] = np.nan
     
             # uncertainty of 10 cm approx.
             if filename.startswith('ULS_1893') or filename.startswith('ULS_Taymyr'):
@@ -105,10 +118,15 @@ for filename in os.listdir(directory):
                 index = np.insert(np.append(mondiff, len(months)-1), 0, 0)
             
             # compute monthly SID values
-            dataOut.SID_final = np.array(
-                [np.nanmean(SID[index[i]:index[i+1]]) for i in range(len(index)-1)])
-            dataOut.SID_std = np.array(
-                [np.nanstd(SID[index[i]:index[i+1]]) for i in range(len(index)-1)])
+            # dataOut.SID_final = np.array(
+            #     [np.nanmean(SID[index[i]:index[i+1]]) for i in range(len(index)-1)])
+            # dataOut.SID_std = np.array(
+            #     [np.nanstd(SID[index[i]:index[i+1]]) for i in range(len(index)-1)])
+
+            dataOut.SID_final=np.array([np.nanmedian(SID[index[i]:index[i+1]]) for i in range(len(index)-1)])
+            #dataOut.SID_std=np.array([np.nanstd(SID[index[i]:index[i+1]]) for i in range(len(index)-1)])
+            dataOut.SID_std = np.array([robust_std(SID[index[i]:index[i+1]]) for i in range(len(index)-1)])
+
             dataOut.SID_ln = np.array([len(SID[index[i]:index[i+1]])
                                       for i in range(len(index)-1)])
             # compute uncertainty
@@ -117,7 +135,38 @@ for filename in os.listdir(directory):
                 end = index[i+1]
                 dataOut.SID_unc = np.append(
                     dataOut.SID_unc, 1/dataOut.SID_ln[i] * np.sqrt(np.nansum(SID_Unc[start:end]**2)))
-    
+                
+            ######### QUALITY FLAGS ############
+            dataOut.QFT = [] # temporal
+            dataOut.QFS = [] # spatial
+            dataOut.QFG = [] # global threshold
+
+            days = [time.day for time in t]
+            for i in range(len(index)-1):
+                # find number of days
+                unique = len(np.unique(days[index[i]:index[i+1]]))
+                if np.any(SID[index[i]:index[i+1]]>8):
+                    dataOut.QFG.append(1)
+                else:
+                    dataOut.QFG.append(0)
+                if unique==1:
+                    dataOut.QFT.append(3)
+                    dataOut.QFS.append(3)
+                elif unique<=5:
+                    dataOut.QFT.append(2)
+                    dataOut.QFS.append(3)
+                elif unique<15:
+                    dataOut.QFT.append(1)
+                    dataOut.QFS.append(3)
+                elif unique>=15:
+                    dataOut.QFT.append(0)
+                    dataOut.QFS.append(0)
+            
+            dataOut.QFT = np.array(dataOut.QFT)
+            dataOut.QFS = np.array(dataOut.QFS)
+            dataOut.QFG = np.array(dataOut.QFG)
+            ######### QUALITY FLAGS ############
+            
             #find median date within month (tells about which part of the month majority measurements are from)
             avgDates = np.array([np.median(t2[index[i]:index[i+1]])
                                 for i in range(len(index)-1)])
@@ -148,13 +197,20 @@ for filename in os.listdir(directory):
                 dataOut.w_density_final = np.append(
                     dataOut.w_density_final, w_density)
     
+            dataOut.time = [np.datetime64(d) for d in dataOut.date_final]
+            dataOut.pp_flag = [dataOut.pp_flag]*len(dataOut.SID_final)
+            dataOut.unc_flag = [dataOut.unc_flag]*len(dataOut.SID_final)
+            dataOut.obsID = [dataOut.obsID]*len(dataOut.SID_final)
+            
             # fill empty arrays with NaN values
             dataOut.Check_Output()
     
-            # print data to output file
-            dataOut.Print_to_output(ofile, primary='SID')
-       # except:
-       #     print(filename)
+            if count>1:
+                subset = dataOut.Create_NC_file(ofile, primary='SID')
+                df = Functions.Append_to_NC(df, subset)
+            else:
+                df = dataOut.Create_NC_file(ofile, primary='SID', datasource='Daily mean sea ice draft from moored Upward-Looking Sonars in the Laptev Sea between 2013 and 2015: https://doi.pangaea.de/10.1594/PANGAEA.899275 + Daily mean sea ice draft from moored upward-looking Acoustic Doppler Current Profilers (ADCPs) in the Laptev Sea from 2003 to 2016: https://doi.pangaea.de/10.1594/PANGAEA.912927', key_variables='Sea Ice Draft')
+                
 
 # Sort final data based on date
-Functions.sort_final_data(ofile, saveplot=saveplot, HS='NH', primary='SID')
+Functions.save_NC_file(df, ofile, primary='SID')
