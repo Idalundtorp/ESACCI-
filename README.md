@@ -3,7 +3,7 @@ Code for sea ice thickness reference measurements
 
 
 # Project Description:
-The Climate Change Initiative sea ice thickness Round Robin Data Package (CCI SIT RRDP) is a set of space delimitted ASCII files which contain a range of relevant reference sea ice variables, including sea ice thickness, snow depth, draft and freeboard, along with snow depth and density from Warren climatology (1999) for Arctic. Sea ice surface temperature and air temperature is also provided when available. The data has been gridded into a 25 by 25 km product for Arctic and 50 by 50 km for Antarctic using EASE-grid 2.0 and contains monthly averages of the given gridpoint. Reference data from autonomous buoys, moorings, submarines, ships (ice breakers), airborne campaigns (radar/laser altimetry and electromagnetic induction system) and in-situ measurements is provided in the final dataset. This dataset is available from DTU DATA ([DOI:10.11583/DTU.23735679](https://doi.org/10.11583/DTU.24787341)) and described in the publication DOI: **INSERT DOI**.\
+The Climate Change Initiative sea ice thickness Round Robin Data Package (CCI SIT RRDP) is a set of space delimitted ASCII files which contain a range of relevant reference sea ice variables, including sea ice thickness, snow depth, draft and freeboard, along with snow depth and density from Warren climatology (1999) for Arctic. Sea ice surface temperature and air temperature is also provided when available. The data has been gridded into a 25 by 25 km product for Arctic and 50 by 50 km for Antarctic using EASE-grid 2.0 and contains monthly averages of the given gridpoint. Reference data from autonomous buoys, moorings, submarines, ships (ice breakers), airborne campaigns (radar/laser altimetry and electromagnetic induction system) and in-situ measurements is provided in the final dataset. This dataset is available from DTU DATA ([https://figshare.com/s/77be0cfd6842d08f1b6b] / [DOI:10.11583/DTU.23735679](https://doi.org/10.11583/DTU.24787341)) and described in the publication DOI: **INSERT DOI**.\
 
 This repository provides the code used for processing from raw reference data to the final gridded product and the code used for co-locating reference data to satellite measurements from Envisat, CryoSat-2, ERS-1 and ERS-2. For examples of use, further information and inspiration we refer to the belonging paper: *"Dual-hemisphere sea ice thickness reference measurements from multiple data sources for evaluation and product inter-comparison of satellite altimetry"* with DOI: **INSERT DOI**
 We highly recommend potential users of the repository to read the paper.
@@ -35,7 +35,7 @@ Individual links to raw data are available from the belonging publication in tab
 
 The *../RRDPp/satellite* folder contains scripts that are related to co-locating data from CryoSat-2, ENVISAT, ERS-1 and ERS-2 to data in the *../RRDPp/FINAL* folder.\
 
-To do the co-location reference data from the CCI SIT RRDP DOI: 10.11583/DTU.23735679 and satelitte data from table 3 **INSERT DOI WHEN AVAILABLE** must be downloaded.
+To do the co-location reference data from the CCI SIT RRDP (https://figshare.com/s/77be0cfd6842d08f1b6b / DOI: 10.11583/DTU.23735679 ) and satelitte data from table 3 **INSERT DOI WHEN AVAILABLE** must be downloaded.
 
 For an overview of the satellite folder see the diagram above.\
 
